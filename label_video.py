@@ -61,10 +61,14 @@ while(cap.isOpened()):
     results = [aug.augment_image(image) for aug in augments]
 
     for img, name in zip(results, names):
-      output_path = output_path + '/' + name
-      if not os.path.exists(output_path):
-        os.makedirs(output_path)
-      cv2.imwrite(output_path + '/frame_' + str(frame_cnt) + '_' + label + '.jpg', img)
+      path = output_path + '/' + name
+      if not os.path.exists(path):
+        os.makedirs(path)
+      cv2.imwrite(path + '/frame_' + str(frame_cnt) + '_' + label + '.jpg', img)
+    
+    if not os.path.exists(output_path + '/normal'):
+        os.makedirs(output_path + '/normal')
+    cv2.imwrite(output_path + '/normal/frame_' + str(frame_cnt) + '_' + label + '.jpg', img)
     frame_cnt += 1
   # Break the loop
   else: 
