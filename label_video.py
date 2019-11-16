@@ -3,6 +3,7 @@ import numpy as np
 import json
 import argparse
 import os
+from imgaug import augmenters as iaa
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--video", help="Path to video file to label",
@@ -21,9 +22,6 @@ def get_label_duration(labels, label_index, FPS):
   label = ''.join(str(e) for e in labels[label_index]['left']) + ''.join(str(e) for e in labels[label_index]['right'])
   duration = labels[label_index]['to'] * FPS
   return label, duration
-
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
 
 # Create a VideoCapture object and read from input file
 # If the input is the camera, pass 0 instead of the video file name
@@ -57,9 +55,16 @@ while(cap.isOpened()):
       label_cnt += 1
       label, duration = get_label_duration(labels, label_cnt, FPS)
 
-    # TODO perform image augmentation here
-    
-    cv2.imwrite(output_path + '/frame_' + str(frame_cnt) + '_' + label + '.jpg', frame)
+    # Perform image augmentation, then saved all augmented images in different folders
+    augments = [iaa.Affine(rotate=(-25, 25)), iaa.GaussianBlur(0.5), iaa.LinearContrast(1.2), iaa.AdditiveGaussianNoise(scale=0.05*100)]
+    names = ['affine', 'blur', 'linearcontrast', 'noise']
+    results = [aug.augment_image(image) for aug in augments]
+
+    for img, name in zip(results, names):
+      output_path = output_path + '/' + name
+      if not os.path.exists(output_path):
+        os.makedirs(output_path)
+      cv2.imwrite(output_path + '/frame_' + str(frame_cnt) + '_' + label + '.jpg', img)
     frame_cnt += 1
   # Break the loop
   else: 
