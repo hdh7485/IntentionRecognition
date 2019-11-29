@@ -104,4 +104,11 @@ venv.bak/
 .mypy_cache/
 .vscode/
 output/
+<<<<<<< HEAD
 *.jpg
+=======
+
+# video files
+*.avi
+*.mp4
+>>>>>>> Add labeling_v2.py
