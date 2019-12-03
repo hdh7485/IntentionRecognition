@@ -1,7 +1,8 @@
+from keras import backend as K
 from keras import models
 from keras import layers
 from keras import optimizers
-from keras import datasets
+from keras.datasets import cifar10
 
 from keras.applications import xception
 from keras.applications import inception_resnet_v2
@@ -10,17 +11,25 @@ from keras.applications import mobilenet_v2
 from keras.applications import densenet
 from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
-
+import cv2
 import numpy as np
 
-(x_train, y_train), (x_test, y_test) = datasets.mnist.load_data()
+img_rows = 128
+img_cols = 128
+
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+resize_x_train = []
+for img in x_train:
+    resize_x_train.append(cv2.resize(img, (img_rows, img_cols)))
+x_train = np.array(resize_x_train)
 
 model = models.Sequential()
 image_size = 612
 
-name = 'xception'
-model_dict = { 'xception': xception.Xception(weights='imagenet', include_top=False, input_shape=(image_size, image_size, 3)),
-        'inception_resnet_v2': inception_resnet_v2.InceptionResNetV2(weights='imagenet', include_top=False),
+name = 'inception_resnet_v2'
+model_dict = { 'xception': xception.Xception(weights='imagenet', include_top=False, input_shape=(img_cols, img_rows, 3)),
+        'inception_resnet_v2': inception_resnet_v2.InceptionResNetV2(weights='imagenet', include_top=False, input_shape=(img_cols, img_rows, 3)),
         'resnet_v2': resnet_v2.ResNet101V2(weights='imagenet', include_top=False),
         'mobilenet_v2': mobilenet_v2.MobileNetV2(weights='imagenet', include_top=False),
         'densenet': densenet.DenseNet201(weights='imagenet', include_top=False)
@@ -67,31 +76,39 @@ train_batchsize = 100
 val_batchsize = 10
   
 train_generator = train_datagen.flow(
-        x_train,
+        resize_x_train,
         y_train,
         #target_size=(image_size, image_size),
-        batch_size=train_batchsize,
-        class_mode='categorical')
+        batch_size=train_batchsize)
    
 validation_generator = validation_datagen.flow(
         x_test,
         y_test,
         #target_size=(image_size, image_size),
         batch_size=val_batchsize,
-        class_mode='categorical',
         shuffle=False)
 
 model.compile(loss='categorical_crossentropy',
         optimizer=optimizers.RMSprop(lr=1e-4),
         metrics=['acc'])
 # Train the model
-history = model.fit_generator(
-        train_generator,
-        steps_per_epoch=train_generator.samples/train_generator.batch_size ,
-        epochs=30,
-        validation_data=validation_generator,
-        validation_steps=validation_generator.samples/validation_generator.batch_size,
-        verbose=1)
+
+batch_size = 128
+epochs = 12
+
+history = model.fit(
+         batch_size=batch_size,
+         epochs=epochs,
+         steps_per_epoch=10,
+         verbose=1,
+         validation_data=(x_test, y_test))
+#history = model.fit_generator(
+#        train_generator,
+#        steps_per_epoch=train_generator.samples/train_generator.batch_size ,
+#        epochs=30,
+#        validation_data=validation_generator,
+#        validation_steps=validation_generator.samples/validation_generator.batch_size,
+#        verbose=1)
  
 # Save the model
 model.save('small_last4.h5')
